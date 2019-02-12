@@ -21,6 +21,31 @@
 
 namespace spdlog {
 
+typedef details::registry instance;
+
+// Create a new spdlog instance and make it the current instance for the
+// current thread. The instance will remain alive while the returned shared_ptr
+// stays in scope and until it is swapped out by set_instance(). Instances have
+// their own name to logger mappings, default sink, etc.
+inline std::shared_ptr<instance> new_instance() {
+  return details::registry::instance(details::registry::new_instance());
+}
+
+// Replace the spdlog instance for the current thread with the given instance,
+// which should have been previously created with new_instance(). This will
+// delete the previously selected instance unless it's still referenced
+// elsewhere.
+inline void set_instance(std::shared_ptr<instance> instance) {
+  details::registry::instance(instance);
+}
+
+// Replace the spdlog instance for the current thread with the original, global
+// instance. This will delete the previously selected instance unless it's
+// still referenced elsewhere.
+inline void unset_instance() {
+  details::registry::instance(nullptr, true);
+}
+
 // Default logger factory-  creates synchronous loggers
 struct synchronous_factory
 {
@@ -29,7 +54,7 @@ struct synchronous_factory
     {
         auto sink = std::make_shared<Sink>(std::forward<SinkArgs>(args)...);
         auto new_logger = std::make_shared<logger>(std::move(logger_name), std::move(sink));
-        details::registry::instance().initialize_logger(new_logger);
+        details::registry::instance()->initialize_logger(new_logger);
         return new_logger;
     }
 };
@@ -52,13 +77,13 @@ inline std::shared_ptr<spdlog::logger> create(std::string logger_name, SinkArgs 
 // example: spdlog::get("my_logger")->info("hello {}", "world");
 inline std::shared_ptr<logger> get(const std::string &name)
 {
-    return details::registry::instance().get(name);
+    return details::registry::instance()->get(name);
 }
 
 // Set global formatter. Each sink in each logger will get a clone of this object
 inline void set_formatter(std::unique_ptr<spdlog::formatter> formatter)
 {
-    details::registry::instance().set_formatter(std::move(formatter));
+    details::registry::instance()->set_formatter(std::move(formatter));
 }
 
 // Set global format string.
@@ -71,32 +96,32 @@ inline void set_pattern(std::string pattern, pattern_time_type time_type = patte
 // Set global logging level
 inline void set_level(level::level_enum log_level)
 {
-    details::registry::instance().set_level(log_level);
+    details::registry::instance()->set_level(log_level);
 }
 
 // Set global flush level
 inline void flush_on(level::level_enum log_level)
 {
-    details::registry::instance().flush_on(log_level);
+    details::registry::instance()->flush_on(log_level);
 }
 
 // Start/Restart a periodic flusher thread
 // Warning: Use only if all your loggers are thread safe!
 inline void flush_every(std::chrono::seconds interval)
 {
-    details::registry::instance().flush_every(interval);
+    details::registry::instance()->flush_every(interval);
 }
 
 // Set global error handler
 inline void set_error_handler(log_err_handler handler)
 {
-    details::registry::instance().set_error_handler(std::move(handler));
+    details::registry::instance()->set_error_handler(std::move(handler));
 }
 
 // Register the given logger with the given name
 inline void register_logger(std::shared_ptr<logger> logger)
 {
-    details::registry::instance().register_logger(std::move(logger));
+    details::registry::instance()->register_logger(std::move(logger));
 }
 
 // Apply a user defined function on all registered loggers
@@ -104,31 +129,31 @@ inline void register_logger(std::shared_ptr<logger> logger)
 // spdlog::apply_all([&](std::shared_ptr<spdlog::logger> l) {l->flush();});
 inline void apply_all(const std::function<void(std::shared_ptr<logger>)> &fun)
 {
-    details::registry::instance().apply_all(fun);
+    details::registry::instance()->apply_all(fun);
 }
 
 // Drop the reference to the given logger
 inline void drop(const std::string &name)
 {
-    details::registry::instance().drop(name);
+    details::registry::instance()->drop(name);
 }
 
 // Drop all references from the registry
 inline void drop_all()
 {
-    details::registry::instance().drop_all();
+    details::registry::instance()->drop_all();
 }
 
 // stop any running threads started by spdlog and clean registry loggers
 inline void shutdown()
 {
-    details::registry::instance().shutdown();
+    details::registry::instance()->shutdown();
 }
 
 // Automatic registration of loggers when using spdlog::create() or spdlog::create_async
 inline void set_automatic_registration(bool automatic_registation)
 {
-    details::registry::instance().set_automatic_registration(automatic_registation);
+    details::registry::instance()->set_automatic_registration(automatic_registation);
 }
 
 // API for using default logger (stdout_color_mt),
@@ -148,17 +173,17 @@ inline void set_automatic_registration(bool automatic_registation)
 
 inline std::shared_ptr<spdlog::logger> default_logger()
 {
-    return details::registry::instance().default_logger();
+    return details::registry::instance()->default_logger();
 }
 
 inline spdlog::logger *default_logger_raw()
 {
-    return details::registry::instance().get_default_raw();
+    return details::registry::instance()->get_default_raw();
 }
 
 inline void set_default_logger(std::shared_ptr<spdlog::logger> default_logger)
 {
-    details::registry::instance().set_default_logger(std::move(default_logger));
+    details::registry::instance()->set_default_logger(std::move(default_logger));
 }
 
 template<typename... Args>

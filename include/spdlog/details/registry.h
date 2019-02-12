@@ -225,11 +225,34 @@ public:
         automatic_registration_ = automatic_regsistration;
     }
 
-    static registry &instance()
+    static std::shared_ptr<registry> instance(std::shared_ptr<registry> new_instance = nullptr, bool unset = false)
     {
-        static registry s_instance;
-        return s_instance;
+        static std::shared_ptr<registry> global_instance = std::shared_ptr<registry>(new registry());
+        static thread_local std::shared_ptr<registry> current_instance = nullptr;
+        if (new_instance != nullptr)
+        {
+            current_instance = new_instance;
+        }
+        else if (unset)
+        {
+            current_instance = nullptr;
+        }
+        if (current_instance == nullptr)
+        {
+            return global_instance;
+        }
+        else
+        {
+            return current_instance;
+        }
     }
+
+    static std::shared_ptr<registry> new_instance()
+    {
+        return std::shared_ptr<registry>(new registry());
+    }
+
+    ~registry() = default;
 
 private:
     registry()
@@ -250,8 +273,6 @@ private:
 
 #endif // SPDLOG_DISABLE_DEFAULT_LOGGER
     }
-
-    ~registry() = default;
 
     void throw_if_exists_(const std::string &logger_name)
     {
