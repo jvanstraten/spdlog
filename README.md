@@ -1,13 +1,27 @@
+# spdlog + instancing
+
+This is a fork of [spdlog](https://github.com/gabime/spdlog) that allows the user to create multiple "instances" of the global logger registry. I added this because I wanted to use spdlog in the context of a library which may be instanced multiple times in such a way that the different instances do not interact in any way. Without instancing support, the mapping from logger name to logger object would be global, and would thus violate this contract.
+
+When you don't use the new instance functions, spdlog functionally behaves exactly the same way as upstream, though it's possibly a little slower due to the addition of a `shared_ptr`. The semantics only change when `spdlog::new_instance()` is called. The changes are as follows:
+
+ - spdlog function calls between calling `spdlog::new_instance()` and `spdlog::unset_instance()` do not modify spdlog's global state; they instead operate on the specified instance. This happens on a per-thread basis.
+ - A previously constructed instance can be made current again by passing the return value of `spdlog::new_instance()` to `spdlog::set_instance()`. `spdlog::set_instance()` has the same semantics as `spdlog::new_instance()`, except it makes a previously constructed instance current instead of constructing a new one.
+ - Calling `spdlog::new_instance()` or `spdlog::unset_instance()` while a user-created instance has already been set functionally behaves as if `spdlog::unset_instance()` is called first.
+ - Once an instance goes out of scope and is no longer current in any thread, it is automatically disposed of through `std::shared_ptr`'s semantics.
+
+The remainder of this readme file is copied from the [original spdlog repository](https://github.com/gabime/spdlog), aside from redirecting the source code hyperlink in the install instructions to this repository and removing the build status stuff.
+
+
 # spdlog
 
-Very fast, header only, C++ logging library. [![Build Status](https://travis-ci.org/gabime/spdlog.svg?branch=master)](https://travis-ci.org/gabime/spdlog)&nbsp; [![Build status](https://ci.appveyor.com/api/projects/status/d2jnxclg20vd0o50?svg=true)](https://ci.appveyor.com/project/gabime/spdlog)
+Very fast, header only, C++ logging library.
 
 
 
 ## Install
 #### Just copy the headers:
 
-* Copy the source [folder](https://github.com/gabime/spdlog/tree/v1.x/include/spdlog) to your build tree and use a C++11 compiler.
+* Copy the source [folder](https://github.com/jvanstraten/spdlog/tree/v1.x/include/spdlog) to your build tree and use a C++11 compiler.
 
 #### Or use your favorite package manager:
 
