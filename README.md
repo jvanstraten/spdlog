@@ -6,7 +6,7 @@ When you don't use the new instance functions, spdlog functionally behaves exact
 
  - spdlog function calls between calling `spdlog::new_instance()` and `spdlog::unset_instance()` do not modify spdlog's global state; they instead operate on the specified instance. This happens on a per-thread basis.
  - A previously constructed instance can be made current again by passing the return value of `spdlog::new_instance()` to `spdlog::set_instance()`. `spdlog::set_instance()` has the same semantics as `spdlog::new_instance()`, except it makes a previously constructed instance current instead of constructing a new one.
- - Calling `spdlog::new_instance()` or `spdlog::unset_instance()` while a user-created instance has already been set functionally behaves as if `spdlog::unset_instance()` is called first.
+ - Calling `spdlog::new_instance()` or `spdlog::set_instance()` while a user-created instance has already been set functionally behaves as if `spdlog::unset_instance()` is called first.
  - Once an instance goes out of scope and is no longer current in any thread, it is automatically disposed of through `std::shared_ptr`'s semantics.
 
 The remainder of this readme file is copied from the [original spdlog repository](https://github.com/gabime/spdlog), aside from redirecting the source code hyperlink in the install instructions to this repository and removing the build status stuff.
